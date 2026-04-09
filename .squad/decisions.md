@@ -2,6 +2,12 @@
 
 ## Active Decisions
 
+### Workshop SWA — Single-File Architecture
+**Author:** Tony Stark  
+**Date:** 2026-04-09 | **Status:** Implemented
+
+Dashboard for manual workshop tasks across Exercises 4, 5, and 6. Built as single `index.html` file at `src/swa/` with no build step, no framework, no external JS dependencies. All CSS and JS inline. Zero build complexity, no dependency drift, portable (works offline), and uses localStorage for checkpoint persistence. 42KB single file with ~80 lines of inline JS. No changes to existing code or workflows.
+
 ### Exercise 6: Red Teaming Agent & Custom Attack Prompts
 **Author:** Natasha Romanoff (Security & Testing)  
 **Date:** 2026-04-09 | **Status:** Complete
