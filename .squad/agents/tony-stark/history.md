@@ -112,3 +112,12 @@ Initial setup complete.
 - **Files modified:** `src/prompts/CustomerLoyaltyAgentPrompt.txt` — added content handling guideline for answer and discount_percentage columns.
 - **Pattern:** Each agent workflow triggers on push to its prompt file, JSON definition, or own workflow file. Uses az rest POST to Foundry REST API with jq-built payload.
 - **Validation:** All 11 workflow YAML files pass yaml.safe_load validation.
+
+### Workshop Manual Tasks SWA (2026-04-09)
+- **Task:** Built a standalone Azure Static Web App for tracking manual workshop tasks.
+- **Files created:**
+  1. `src/swa/index.html` — Single-file SWA with 7 tabbed task panels (Exercises 4/5/6), 45 checkable steps, copy-to-clipboard buttons, localStorage progress persistence, progress bar, and celebration state.
+  2. `src/swa/staticwebapp.config.json` — Azure SWA config with navigation fallback and security headers.
+- **Design:** Mission-control dashboard aesthetic — dark theme (#06090f base), Chakra Petch + JetBrains Mono fonts, cyan/amber/green accent palette, scanline overlay, grid texture background, CSS-only checkboxes with glow effects.
+- **Features:** 7 tabs (Connect App Insights, Set Env Vars, Deploy to Production, Create Service Principal, Set GitHub Secrets, Run Red Team Eval, Create Agent Evals), per-step checkboxes with localStorage, overall progress bar, tab completion badges, copy-to-clipboard for commands/values, particle celebration overlay on 100% completion.
+- **No build step:** Pure HTML + CSS + JS, no framework, no dependencies.

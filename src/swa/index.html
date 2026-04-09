@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TechWorkshop L300 — Mission Control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════
+   CSS VARIABLES — MISSION CONTROL PALETTE
+   ═══════════════════════════════════════════════ */
+:root {
+  --bg-deep: #06090f;
+  --bg-panel: #0c1018;
+  --bg-card: #111822;
+  --bg-elevated: #182030;
+  --border: #1e2a3a;
+  --border-glow: #00e1ff22;
+  --cyan: #00e1ff;
+  --cyan-dim: #00e1ff88;
+  --cyan-ghost: #00e1ff15;
+  --amber: #ffb400;
+  --amber-dim: #ffb40088;
+  --green: #00ff88;
+  --green-dim: #00ff8866;
+  --red: #ff3366;
+  --text-primary: #e8edf5;
+  --text-secondary: #8899aa;
+  --text-muted: #556677;
+  --font-display: 'Chakra Petch', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --radius: 6px;
+  --glow-cyan: 0 0 20px #00e1ff33, 0 0 60px #00e1ff11;
+  --glow-green: 0 0 20px #00ff8833, 0 0 60px #00ff8811;
+  --glow-amber: 0 0 20px #ffb40033;
+}
+
+/* ═══════════════════════════════════════════════
+   RESET & BASE
+   ═══════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  font-size: 15px;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-mono);
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Scanline overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    #00e1ff03 2px,
+    #00e1ff03 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Grid background texture */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 20% 50%, #00e1ff06 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, #ffb40004 0%, transparent 40%),
+    linear-gradient(#1e2a3a08 1px, transparent 1px),
+    linear-gradient(90deg, #1e2a3a08 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ═══════════════════════════════════════════════
+   HEADER
+   ═══════════════════════════════════════════════ */
+.header {
+  padding: 1.5rem 2rem 0;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.logo-mark {
+  width: 42px;
+  height: 42px;
+  border: 2px solid var(--cyan);
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--cyan);
+  box-shadow: var(--glow-cyan);
+  position: relative;
+  overflow: hidden;
+}
+
+.logo-mark::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--cyan-ghost), transparent);
+}
+
+.header-title {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+}
+
+.header-subtitle {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+/* ═══════════════════════════════════════════════
+   PROGRESS SECTION
+   ═══════════════════════════════════════════════ */
+.progress-section {
+  padding: 1rem 2rem 0.5rem;
+}
+
+.progress-bar-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.progress-label {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.progress-track {
+  flex: 1;
+  height: 6px;
+  background: var(--bg-elevated);
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--cyan), var(--green));
+  border-radius: 3px;
+  width: 0%;
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: -2px;
+  bottom: -2px;
+  width: 12px;
+  background: var(--green);
+  border-radius: 2px;
+  box-shadow: var(--glow-green);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.progress-fill[style*="width"]:not([style*="width: 0"])::after {
+  opacity: 1;
+}
+
+.progress-count {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--cyan);
+  min-width: 4.5rem;
+  text-align: right;
+  letter-spacing: 0.05em;
+}
+
+.progress-percent {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  margin-left: 0.25rem;
+}
+
+/* ═══════════════════════════════════════════════
+   TABS NAVIGATION
+   ═══════════════════════════════════════════════ */
+.tabs-nav {
+  display: flex;
+  gap: 2px;
+  padding: 1rem 2rem 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.tab-btn {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.65rem 1rem;
+  background: var(--bg-panel);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: var(--radius) var(--radius) 0 0;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+  position: relative;
+}
+
+.tab-btn:hover {
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+.tab-btn.active {
+  background: var(--bg-card);
+  color: var(--cyan);
+  border-color: var(--cyan-dim);
+  border-top: 2px solid var(--cyan);
+}
+
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--bg-card);
+}
+
+.tab-exercise {
+  display: block;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  font-weight: 400;
+  margin-top: 2px;
+  letter-spacing: 0.08em;
+}
+
+.tab-btn.active .tab-exercise {
+  color: var(--cyan-dim);
+}
+
+.tab-check {
+  display: inline-block;
+  margin-left: 0.4rem;
+  font-size: 0.65rem;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.tab-btn.tab-complete .tab-check {
+  opacity: 1;
+  color: var(--green);
+}
+
+/* ═══════════════════════════════════════════════
+   TAB CONTENT
+   ═══════════════════════════════════════════════ */
+.tabs-content {
+  padding: 0 2rem 2rem;
+}
+
+.tab-panel {
+  display: none;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 0 var(--radius) var(--radius) var(--radius);
+  padding: 1.5rem 2rem;
+  animation: panelIn 0.35s ease;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
+@keyframes panelIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.panel-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.panel-icon.cyan  { background: var(--cyan-ghost); border: 1px solid var(--cyan-dim); }
+.panel-icon.amber { background: #ffb40015; border: 1px solid var(--amber-dim); }
+.panel-icon.green { background: #00ff8815; border: 1px solid var(--green-dim); }
+
+.panel-title {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.panel-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+/* ═══════════════════════════════════════════════
+   STEP LIST
+   ═══════════════════════════════════════════════ */
+.step-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+  border: 1px solid transparent;
+  transition: all 0.25s ease;
+  position: relative;
+}
+
+.step-item:hover {
+  border-color: var(--border);
+  background: #1a2538;
+}
+
+.step-item.checked {
+  opacity: 0.55;
+  border-color: var(--green-dim);
+}
+
+.step-item.checked::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--green);
+  border-radius: var(--radius) 0 0 var(--radius);
+}
+
+/* Custom checkbox */
+.step-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-deep);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  position: relative;
+  margin-top: 1px;
+}
+
+.step-checkbox:hover {
+  border-color: var(--cyan-dim);
+  box-shadow: 0 0 8px var(--cyan-ghost);
+}
+
+.step-checkbox:checked {
+  background: var(--green);
+  border-color: var(--green);
+  box-shadow: var(--glow-green);
+}
+
+.step-checkbox:checked::after {
+  content: '✓';
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--bg-deep);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.step-number {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--cyan);
+  background: var(--cyan-ghost);
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  border-radius: 4px;
+  display: grid;
+  place-items: center;
+  margin-top: 1px;
+}
+
+.step-item.checked .step-number {
+  color: var(--green);
+  background: #00ff8815;
+}
+
+.step-text {
+  flex: 1;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--text-primary);
+}
+
+.step-item.checked .step-text {
+  text-decoration: line-through;
+  text-decoration-color: var(--green-dim);
+}
+
+/* Inline code */
+.step-text code {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  background: var(--bg-deep);
+  color: var(--amber);
+  padding: 0.15em 0.45em;
+  border-radius: 3px;
+  border: 1px solid #ffb40022;
+  word-break: break-all;
+}
+
+/* Command blocks */
+.cmd-block {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.55rem 0.75rem;
+  margin-top: 0.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.cmd-block::before {
+  content: '$';
+  font-family: var(--font-mono);
+  color: var(--green);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.cmd-text {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--amber);
+  flex: 1;
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.copy-btn {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  padding: 0.3rem 0.6rem;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.copy-btn:hover {
+  background: var(--bg-card);
+  color: var(--cyan);
+  border-color: var(--cyan-dim);
+}
+
+.copy-btn.copied {
+  color: var(--green);
+  border-color: var(--green-dim);
+}
+
+/* Value highlight blocks */
+.value-block {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-deep);
+  border: 1px solid #ffb40022;
+  border-left: 3px solid var(--amber);
+  border-radius: var(--radius);
+  padding: 0.45rem 0.75rem;
+  margin-top: 0.4rem;
+}
+
+.value-label {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  flex-shrink: 0;
+}
+
+.value-text {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--amber);
+  flex: 1;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+/* Sub-step list for secrets */
+.sub-steps {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+  padding-left: 0.5rem;
+}
+
+.sub-step {
+  font-size: 0.78rem;
+  color: var(--text-primary);
+  padding: 0.3rem 0;
+  border-left: 2px solid var(--border);
+  padding-left: 0.75rem;
+}
+
+.sub-step code {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  background: var(--bg-deep);
+  color: var(--amber);
+  padding: 0.1em 0.4em;
+  border-radius: 3px;
+  border: 1px solid #ffb40022;
+}
+
+/* Link styling */
+.step-link {
+  color: var(--cyan);
+  text-decoration: none;
+  border-bottom: 1px solid var(--cyan-dim);
+  transition: all 0.2s;
+}
+
+.step-link:hover {
+  color: #fff;
+  border-color: var(--cyan);
+  text-shadow: 0 0 8px var(--cyan-dim);
+}
+
+/* ═══════════════════════════════════════════════
+   CELEBRATION OVERLAY
+   ═══════════════════════════════════════════════ */
+.celebration {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: #06090fee;
+  backdrop-filter: blur(8px);
+  place-items: center;
+  animation: fadeIn 0.5s ease;
+}
+
+.celebration.show {
+  display: grid;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.celebration-card {
+  text-align: center;
+  padding: 3rem 4rem;
+  background: var(--bg-card);
+  border: 2px solid var(--green);
+  border-radius: 16px;
+  box-shadow: var(--glow-green), 0 20px 60px #00000088;
+  animation: celebrate 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  max-width: 500px;
+}
+
+@keyframes celebrate {
+  from { opacity: 0; transform: scale(0.85) translateY(30px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.celebration-icon {
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+  animation: pulse 1.5s ease infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.celebration-title {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--green);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+  text-shadow: var(--glow-green);
+}
+
+.celebration-text {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.celebration-close {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.7rem 2rem;
+  background: var(--green);
+  color: var(--bg-deep);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.celebration-close:hover {
+  box-shadow: var(--glow-green);
+  transform: translateY(-1px);
+}
+
+/* Particle dots */
+.celebration-particles {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  animation: float 3s ease-in infinite;
+}
+
+@keyframes float {
+  0%   { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-200px) scale(0); }
+}
+
+/* ═══════════════════════════════════════════════
+   FOOTER
+   ═══════════════════════════════════════════════ */
+.footer {
+  padding: 1.5rem 2rem;
+  text-align: center;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-top: 1px solid var(--border);
+  margin-top: 2rem;
+}
+
+/* ═══════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .header { padding: 1rem; }
+  .progress-section { padding: 0.75rem 1rem; }
+  .tabs-nav { padding: 0.75rem 1rem 0; gap: 1px; }
+  .tab-btn { padding: 0.5rem 0.6rem; font-size: 0.65rem; }
+  .tabs-content { padding: 0 1rem 1rem; }
+  .tab-panel { padding: 1rem; }
+  .cmd-block { flex-wrap: wrap; }
+  .celebration-card { padding: 2rem; margin: 1rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- HEADER                                         -->
+<!-- ═══════════════════════════════════════════════ -->
+<header class="header">
+  <div class="header-brand">
+    <div class="logo-mark">L3</div>
+    <div>
+      <div class="header-title">TechWorkshop Mission Control</div>
+      <div class="header-subtitle">L300 · AI Apps &amp; Agents · Manual Tasks Dashboard</div>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- PROGRESS BAR                                   -->
+<!-- ═══════════════════════════════════════════════ -->
+<section class="progress-section">
+  <div class="progress-bar-container">
+    <span class="progress-label">Mission Progress</span>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <span class="progress-count" id="progressCount">0 / 0<span class="progress-percent"></span></span>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- TAB NAVIGATION                                 -->
+<!-- ═══════════════════════════════════════════════ -->
+<nav class="tabs-nav" id="tabsNav">
+  <button class="tab-btn active" data-tab="tab-connect-insights">
+    Connect App Insights<span class="tab-exercise">Exercise 4</span><span class="tab-check">✓</span>
+  </button>
+  <button class="tab-btn" data-tab="tab-env-vars">
+    Set Environment Variables<span class="tab-exercise">Exercise 4</span><span class="tab-check">✓</span>
+  </button>
+  <button class="tab-btn" data-tab="tab-deploy">
+    Deploy to Production<span class="tab-exercise">Exercise 4</span><span class="tab-check">✓</span>
+  </button>
+  <button class="tab-btn" data-tab="tab-sp">
+    Create Service Principal<span class="tab-exercise">Exercise 5</span><span class="tab-check">✓</span>
+  </button>
+  <button class="tab-btn" data-tab="tab-secrets">
+    Set GitHub Secrets<span class="tab-exercise">Exercise 5</span><span class="tab-check">✓</span>
+  </button>
+  <button class="tab-btn" data-tab="tab-redteam">
+    Run Red Team Evaluation<span class="tab-exercise">Exercise 6</span><span class="tab-check">✓</span>
+  </button>
+  <button class="tab-btn" data-tab="tab-evals">
+    Create Agent Evaluations<span class="tab-exercise">Exercise 4</span><span class="tab-check">✓</span>
+  </button>
+</nav>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- TAB PANELS                                     -->
+<!-- ═══════════════════════════════════════════════ -->
+<main class="tabs-content">
+
+  <!-- TAB 1: Connect App Insights -->
+  <section class="tab-panel active" id="tab-connect-insights">
+    <div class="panel-header">
+      <div class="panel-icon cyan">📡</div>
+      <div>
+        <div class="panel-title">Connect Application Insights</div>
+        <div class="panel-desc">Exercise 4 — Link Application Insights to your Foundry project</div>
+      </div>
+    </div>
+    <ol class="step-list">
+      <li class="step-item" data-step="1-1">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">1</span>
+        <span class="step-text">Navigate to <a href="https://ai.azure.com" target="_blank" rel="noopener" class="step-link">Microsoft Foundry portal</a></span>
+      </li>
+      <li class="step-item" data-step="1-2">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">2</span>
+        <span class="step-text">Open your project: <code>proj-gl4lk3hwa6s26</code></span>
+      </li>
+      <li class="step-item" data-step="1-3">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">3</span>
+        <span class="step-text">Go to <strong>Project settings</strong> → <strong>Connected resources</strong></span>
+      </li>
+      <li class="step-item" data-step="1-4">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">4</span>
+        <span class="step-text">Click <strong>"Add connection"</strong> → <strong>Application Insights</strong></span>
+      </li>
+      <li class="step-item" data-step="1-5">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">5</span>
+        <span class="step-text">Select your Application Insights resource from the list</span>
+      </li>
+      <li class="step-item" data-step="1-6">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">6</span>
+        <span class="step-text">Confirm the connection</span>
+      </li>
+      <li class="step-item" data-step="1-7">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">7</span>
+        <span class="step-text">Verify it appears under <strong>Connected resources</strong></span>
+      </li>
+    </ol>
+  </section>
+
+  <!-- TAB 2: Set Environment Variables -->
+  <section class="tab-panel" id="tab-env-vars">
+    <div class="panel-header">
+      <div class="panel-icon amber">⚙️</div>
+      <div>
+        <div class="panel-title">Set Environment Variables</div>
+        <div class="panel-desc">Exercise 4 — Configure APPLICATIONINSIGHTS_CONNECTION_STRING on the Container App</div>
+      </div>
+    </div>
+    <ol class="step-list">
+      <li class="step-item" data-step="2-1">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">1</span>
+        <span class="step-text">Open <a href="https://portal.azure.com" target="_blank" rel="noopener" class="step-link">Azure Portal</a></span>
+      </li>
+      <li class="step-item" data-step="2-2">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">2</span>
+        <span class="step-text">Navigate to your Container App: <code>gl4lk3hwa6s26-app</code></span>
+      </li>
+      <li class="step-item" data-step="2-3">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">3</span>
+        <span class="step-text">Go to <strong>Settings → Environment variables</strong> (or <strong>Containers → Environment variables</strong>)</span>
+      </li>
+      <li class="step-item" data-step="2-4">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">4</span>
+        <div class="step-text">
+          Add new variable:
+          <div class="value-block">
+            <span class="value-label">Name</span>
+            <span class="value-text">APPLICATIONINSIGHTS_CONNECTION_STRING</span>
+            <button class="copy-btn" onclick="copyText('APPLICATIONINSIGHTS_CONNECTION_STRING', this)">Copy</button>
+          </div>
+        </div>
+      </li>
+      <li class="step-item" data-step="2-5">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">5</span>
+        <span class="step-text"><strong>Value:</strong> Copy from <strong>Application Insights → Overview → Connection String</strong></span>
+      </li>
+      <li class="step-item" data-step="2-6">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">6</span>
+        <span class="step-text">Save and wait for the container to restart</span>
+      </li>
+      <li class="step-item" data-step="2-7">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">7</span>
+        <span class="step-text">Verify telemetry is flowing in <strong>Application Insights → Live Metrics</strong></span>
+      </li>
+    </ol>
+  </section>
+
+  <!-- TAB 3: Deploy to Production -->
+  <section class="tab-panel" id="tab-deploy">
+    <div class="panel-header">
+      <div class="panel-icon green">🚀</div>
+      <div>
+        <div class="panel-title">Deploy to Production</div>
+        <div class="panel-desc">Exercise 4 — Build the container image and deploy to Container Apps</div>
+      </div>
+    </div>
+    <ol class="step-list">
+      <li class="step-item" data-step="3-1">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">1</span>
+        <span class="step-text">Open a terminal in the <code>src/</code> directory</span>
+      </li>
+      <li class="step-item" data-step="3-2">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">2</span>
+        <div class="step-text">
+          Run the ACR build command:
+          <div class="cmd-block">
+            <span class="cmd-text">az acr build --registry gl4lk3hwa6s26cosureg --image techworkshop:latest .</span>
+            <button class="copy-btn" onclick="copyText('az acr build --registry gl4lk3hwa6s26cosureg --image techworkshop:latest .', this)">Copy</button>
+          </div>
+        </div>
+      </li>
+      <li class="step-item" data-step="3-3">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">3</span>
+        <span class="step-text">Wait for the build to complete (~3-5 minutes)</span>
+      </li>
+      <li class="step-item" data-step="3-4">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">4</span>
+        <div class="step-text">
+          Update the Container App:
+          <div class="cmd-block">
+            <span class="cmd-text">az containerapp update --name gl4lk3hwa6s26-app --resource-group rg-TechWorkshop-L300-AI-Apps-and-agents --image gl4lk3hwa6s26cosureg.azurecr.io/techworkshop:latest</span>
+            <button class="copy-btn" onclick="copyText('az containerapp update --name gl4lk3hwa6s26-app --resource-group rg-TechWorkshop-L300-AI-Apps-and-agents --image gl4lk3hwa6s26cosureg.azurecr.io/techworkshop:latest', this)">Copy</button>
+          </div>
+        </div>
+      </li>
+      <li class="step-item" data-step="3-5">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">5</span>
+        <span class="step-text">Verify: Visit <a href="https://gl4lk3hwa6s26-app.orangepebble-0db1aa7f.eastus2.azurecontainerapps.io" target="_blank" rel="noopener" class="step-link">gl4lk3hwa6s26-app.orangepebble-0db1aa7f.eastus2.azurecontainerapps.io</a></span>
+      </li>
+    </ol>
+  </section>
+
+  <!-- TAB 4: Create Service Principal -->
+  <section class="tab-panel" id="tab-sp">
+    <div class="panel-header">
+      <div class="panel-icon amber">🔑</div>
+      <div>
+        <div class="panel-title">Create Service Principal</div>
+        <div class="panel-desc">Exercise 5 — Create a service principal for GitHub Actions CI/CD</div>
+      </div>
+    </div>
+    <ol class="step-list">
+      <li class="step-item" data-step="4-1">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">1</span>
+        <span class="step-text">Open a terminal</span>
+      </li>
+      <li class="step-item" data-step="4-2">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">2</span>
+        <div class="step-text">
+          Run the service principal creation command:
+          <div class="cmd-block">
+            <span class="cmd-text">az ad sp create-for-rbac --name "TechWorkshop-GitHub-SP" --role contributor --scopes /subscriptions/{subscription-id}/resourceGroups/rg-TechWorkshop-L300-AI-Apps-and-agents --json-auth</span>
+            <button class="copy-btn" onclick="copyText('az ad sp create-for-rbac --name &quot;TechWorkshop-GitHub-SP&quot; --role contributor --scopes /subscriptions/{subscription-id}/resourceGroups/rg-TechWorkshop-L300-AI-Apps-and-agents --json-auth', this)">Copy</button>
+          </div>
+        </div>
+      </li>
+      <li class="step-item" data-step="4-3">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">3</span>
+        <span class="step-text">Copy the <strong>entire JSON output</strong> — you'll need it for GitHub secrets</span>
+      </li>
+      <li class="step-item" data-step="4-4">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">4</span>
+        <div class="step-text">
+          <strong>Note:</strong> Replace <code>{subscription-id}</code> with your actual subscription ID. Find it via:
+          <div class="cmd-block">
+            <span class="cmd-text">az account show --query id -o tsv</span>
+            <button class="copy-btn" onclick="copyText('az account show --query id -o tsv', this)">Copy</button>
+          </div>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- TAB 5: Set GitHub Secrets -->
+  <section class="tab-panel" id="tab-secrets">
+    <div class="panel-header">
+      <div class="panel-icon cyan">🔒</div>
+      <div>
+        <div class="panel-title">Set GitHub Secrets</div>
+        <div class="panel-desc">Exercise 5 — Configure repository secrets for CI/CD pipelines</div>
+      </div>
+    </div>
+    <ol class="step-list">
+      <li class="step-item" data-step="5-1">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">1</span>
+        <span class="step-text">Go to your GitHub repository → <strong>Settings → Secrets and variables → Actions</strong></span>
+      </li>
+      <li class="step-item" data-step="5-2">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">2</span>
+        <div class="step-text">
+          Add these repository secrets:
+          <ul class="sub-steps">
+            <li class="sub-step">
+              <code>AZURE_CREDENTIALS</code> → Paste the full JSON from service principal creation
+              <button class="copy-btn" style="margin-left:0.5rem" onclick="copyText('AZURE_CREDENTIALS', this)">Copy name</button>
+            </li>
+            <li class="sub-step">
+              <code>AZURE_CONTAINER_REGISTRY</code> → <code>gl4lk3hwa6s26cosureg</code>
+              <button class="copy-btn" style="margin-left:0.5rem" onclick="copyText('gl4lk3hwa6s26cosureg', this)">Copy value</button>
+            </li>
+            <li class="sub-step">
+              <code>AZURE_RESOURCE_GROUP</code> → <code>rg-TechWorkshop-L300-AI-Apps-and-agents</code>
+              <button class="copy-btn" style="margin-left:0.5rem" onclick="copyText('rg-TechWorkshop-L300-AI-Apps-and-agents', this)">Copy value</button>
+            </li>
+            <li class="sub-step">
+              <code>FOUNDRY_ENDPOINT</code> → Your Foundry project endpoint URL
+            </li>
+          </ul>
+        </div>
+      </li>
+      <li class="step-item" data-step="5-3">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">3</span>
+        <span class="step-text"><strong>Alternatively:</strong> Bulk import from your <code>.env</code> file — go to Secrets → Actions → <strong>"Import secrets from .env"</strong> → Upload your <code>src/.env</code> file</span>
+      </li>
+      <li class="step-item" data-step="5-4">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">4</span>
+        <span class="step-text">Verify: Go to the <strong>Actions</strong> tab, manually trigger a workflow to test</span>
+      </li>
+    </ol>
+  </section>
+
+  <!-- TAB 6: Run Red Team Evaluation -->
+  <section class="tab-panel" id="tab-redteam">
+    <div class="panel-header">
+      <div class="panel-icon amber">🛡️</div>
+      <div>
+        <div class="panel-title">Run Red Team Evaluation</div>
+        <div class="panel-desc">Exercise 6 — Red team evaluation via Foundry UI</div>
+      </div>
+    </div>
+    <ol class="step-list">
+      <li class="step-item" data-step="6-1">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">1</span>
+        <span class="step-text">Navigate to <a href="https://ai.azure.com" target="_blank" rel="noopener" class="step-link">Microsoft Foundry</a></span>
+      </li>
+      <li class="step-item" data-step="6-2">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">2</span>
+        <span class="step-text">Select <strong>Build → Evaluations → Red team</strong> tab</span>
+      </li>
+      <li class="step-item" data-step="6-3">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">3</span>
+        <span class="step-text">Click <strong>"Create"</strong> to start a new evaluation</span>
+      </li>
+      <li class="step-item" data-step="6-4">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">4</span>
+        <span class="step-text"><strong>Target:</strong> Select <strong>"Agent"</strong> → Choose the <strong>"cora"</strong> agent</span>
+      </li>
+      <li class="step-item" data-step="6-5">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">5</span>
+        <span class="step-text"><strong>Run Configuration:</strong> Leave defaults, click <strong>Next</strong></span>
+      </li>
+      <li class="step-item" data-step="6-6">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">6</span>
+        <span class="step-text"><strong>Prohibited Actions:</strong> Review defaults for cora, optionally add custom actions with <strong>"+ Add action"</strong></span>
+      </li>
+      <li class="step-item" data-step="6-7">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">7</span>
+        <span class="step-text">Click <strong>Save</strong>, then <strong>Next</strong></span>
+      </li>
+      <li class="step-item" data-step="6-8">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">8</span>
+        <span class="step-text"><strong>Review:</strong> Optionally rename the run, then click <strong>Submit</strong></span>
+      </li>
+      <li class="step-item" data-step="6-9">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">9</span>
+        <span class="step-text">Wait for completion (may take up to 1 hour)</span>
+      </li>
+      <li class="step-item" data-step="6-10">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">10</span>
+        <span class="step-text"><strong>Review results:</strong> Click the run link to see attack prompts, responses, and violations</span>
+      </li>
+    </ol>
+  </section>
+
+  <!-- TAB 7: Create Agent Evaluations -->
+  <section class="tab-panel" id="tab-evals">
+    <div class="panel-header">
+      <div class="panel-icon green">📊</div>
+      <div>
+        <div class="panel-title">Create Agent Evaluations</div>
+        <div class="panel-desc">Exercise 4 — Create evaluations in Foundry UI</div>
+      </div>
+    </div>
+    <ol class="step-list">
+      <li class="step-item" data-step="7-1">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">1</span>
+        <span class="step-text">Navigate to <a href="https://ai.azure.com" target="_blank" rel="noopener" class="step-link">Microsoft Foundry</a></span>
+      </li>
+      <li class="step-item" data-step="7-2">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">2</span>
+        <span class="step-text">Go to <strong>Build → Evaluations</strong></span>
+      </li>
+      <li class="step-item" data-step="7-3">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">3</span>
+        <span class="step-text">Click <strong>"New evaluation"</strong></span>
+      </li>
+      <li class="step-item" data-step="7-4">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">4</span>
+        <span class="step-text">Select the <strong>handoff-service</strong> agent</span>
+      </li>
+      <li class="step-item" data-step="7-5">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">5</span>
+        <span class="step-text">Configure with synthetic test data or upload a grounded dataset</span>
+      </li>
+      <li class="step-item" data-step="7-6">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">6</span>
+        <span class="step-text">Choose evaluation metrics: <strong>groundedness</strong>, <strong>relevance</strong>, <strong>coherence</strong></span>
+      </li>
+      <li class="step-item" data-step="7-7">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">7</span>
+        <span class="step-text">Run the evaluation</span>
+      </li>
+      <li class="step-item" data-step="7-8">
+        <input type="checkbox" class="step-checkbox">
+        <span class="step-number">8</span>
+        <span class="step-text">Review results and compare against baseline</span>
+      </li>
+    </ol>
+  </section>
+
+</main>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- CELEBRATION OVERLAY                            -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="celebration" id="celebration">
+  <div class="celebration-particles" id="particles"></div>
+  <div class="celebration-card">
+    <div class="celebration-icon">🎯</div>
+    <div class="celebration-title">All Tasks Complete</div>
+    <div class="celebration-text">
+      Every exercise task has been completed.<br>
+      Workshop mission accomplished — outstanding work, Sean.
+    </div>
+    <button class="celebration-close" onclick="closeCelebration()">Roger That</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- FOOTER                                         -->
+<!-- ═══════════════════════════════════════════════ -->
+<footer class="footer">
+  TechWorkshop L300 · AI Apps &amp; Agents · Mission Control Dashboard
+</footer>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- JAVASCRIPT                                     -->
+<!-- ═══════════════════════════════════════════════ -->
+<script>
+(function() {
+  'use strict';
+
+  const STORAGE_KEY = 'techworkshop-l300-progress';
+
+  // ── State ──────────────────────────────────────
+  function loadState() {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+    } catch { return {}; }
+  }
+
+  function saveState(state) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  const state = loadState();
+
+  // ── Tab switching ──────────────────────────────
+  const tabBtns = document.querySelectorAll('.tab-btn');
+  const tabPanels = document.querySelectorAll('.tab-panel');
+
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.tab;
+      tabBtns.forEach(b => b.classList.remove('active'));
+      tabPanels.forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(target).classList.add('active');
+    });
+  });
+
+  // ── Checkbox handling ──────────────────────────
+  const allCheckboxes = document.querySelectorAll('.step-checkbox');
+  const totalSteps = allCheckboxes.length;
+
+  allCheckboxes.forEach(cb => {
+    const stepItem = cb.closest('.step-item');
+    const stepId = stepItem.dataset.step;
+
+    // Restore state
+    if (state[stepId]) {
+      cb.checked = true;
+      stepItem.classList.add('checked');
+    }
+
+    cb.addEventListener('change', () => {
+      state[stepId] = cb.checked;
+      saveState(state);
+      stepItem.classList.toggle('checked', cb.checked);
+      updateProgress();
+      updateTabBadges();
+      checkCelebration();
+    });
+  });
+
+  // ── Progress bar ───────────────────────────────
+  function updateProgress() {
+    const checked = document.querySelectorAll('.step-checkbox:checked').length;
+    const pct = Math.round((checked / totalSteps) * 100);
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressCount').innerHTML =
+      checked + ' / ' + totalSteps + '<span class="progress-percent"> · ' + pct + '%</span>';
+  }
+
+  // ── Tab completion badges ──────────────────────
+  function updateTabBadges() {
+    tabBtns.forEach(btn => {
+      const tabId = btn.dataset.tab;
+      const panel = document.getElementById(tabId);
+      const boxes = panel.querySelectorAll('.step-checkbox');
+      const allDone = Array.from(boxes).every(c => c.checked);
+      btn.classList.toggle('tab-complete', allDone);
+    });
+  }
+
+  // ── Celebration ────────────────────────────────
+  let celebrationShown = false;
+
+  function checkCelebration() {
+    if (celebrationShown) return;
+    const checked = document.querySelectorAll('.step-checkbox:checked').length;
+    if (checked === totalSteps) {
+      celebrationShown = true;
+      showCelebration();
+    }
+  }
+
+  function showCelebration() {
+    const el = document.getElementById('celebration');
+    el.classList.add('show');
+    spawnParticles();
+  }
+
+  window.closeCelebration = function() {
+    document.getElementById('celebration').classList.remove('show');
+  };
+
+  function spawnParticles() {
+    const container = document.getElementById('particles');
+    container.innerHTML = '';
+    const colors = ['#00e1ff', '#00ff88', '#ffb400', '#ff3366', '#ffffff'];
+    for (let i = 0; i < 50; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      p.style.left = Math.random() * 100 + '%';
+      p.style.top = (60 + Math.random() * 40) + '%';
+      p.style.background = colors[Math.floor(Math.random() * colors.length)];
+      p.style.animationDelay = (Math.random() * 2) + 's';
+      p.style.animationDuration = (2 + Math.random() * 2) + 's';
+      container.appendChild(p);
+    }
+  }
+
+  // ── Copy to clipboard ─────────────────────────
+  window.copyText = function(text, btn) {
+    navigator.clipboard.writeText(text).then(() => {
+      const orig = btn.textContent;
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = orig;
+        btn.classList.remove('copied');
+      }, 1500);
+    }).catch(() => {
+      // Fallback for non-HTTPS
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      const orig = btn.textContent;
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = orig;
+        btn.classList.remove('copied');
+      }, 1500);
+    });
+  };
+
+  // ── Init ───────────────────────────────────────
+  updateProgress();
+  updateTabBadges();
+
+})();
+</script>
+</body>
+</html>
