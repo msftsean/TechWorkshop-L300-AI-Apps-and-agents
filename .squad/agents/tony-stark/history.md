@@ -15,6 +15,16 @@ Agent Tony Stark initialized and ready for work.
 
 Initial setup complete.
 
+### Exercise 3 — A2A Protocol Integration (2026-04-09)
+- **Task:** Implemented Exercise 3 (Task 1 + Task 2) — A2A Protocol integration for the Zava Product Helper.
+- **Files created:**
+  1. `src/a2a/agent/product_management_agent.py` — Main agent with ProductAgent (get_products tool), MarketingAgent, RankerAgent, and ProductManagerAgent orchestrator. Uses Agent Framework with Azure OpenAI via managed identity.
+  2. `src/a2a/agent/agent_executor.py` — A2A protocol executor bridging the agent to A2A event queues (streaming, task lifecycle).
+  3. `src/a2a/agent/a2a_server.py` — A2A server wrapper with AgentCard, skills, and Starlette app for mounting.
+  4. `src/a2a/api/chat.py` — FastAPI chat router with `/chat/message` (sync), `/chat/stream` (SSE), and session management endpoints.
+- **Architecture:** Multi-agent delegation pattern — ProductManagerAgent delegates to ProductAgent, MarketingAgent, or RankerAgent based on query type. ResponseFormat (Pydantic) enforces structured output with status tracking.
+- **Verification:** All 4 files pass `ast.parse` syntax check and the product_management_agent imports successfully.
+
 ### Docker Build to ACR (2026-04-09)
 - **ACR name:** `gl4lk3hwa6s26cosureg` (full: `gl4lk3hwa6s26cosureg.azurecr.io`)
 - **Image:** `chat-app:latest`
@@ -75,3 +85,30 @@ Initial setup complete.
   - `Cognitive Services OpenAI User` ≠ `Azure AI User`. The former covers model inference; the latter covers Foundry agent operations. You often need both.
   - Cosmos DB uses its own SQL RBAC system (`az cosmosdb sql role assignment create`), not standard Azure RBAC (`az role assignment create`). The built-in Data Contributor role ID is `00000000-0000-0000-0000-000000000002`.
   - Role propagation can take 5-10 minutes. If the app still errors after assignment, wait or restart the Container App revision.
+
+### Exercise 4 — Telemetry Instrumentation (2026-04-09)
+- **What:** Uncommented OpenTelemetry + Azure Monitor instrumentation in 3 files: `chat_app.py`, `agent_processor.py`, `discountLogic.py`.
+- **Pattern:** Each file imports `OpenAIInstrumentor` from `opentelemetry.instrumentation.openai_v2`, then calls `configure_azure_monitor()` with the `APPLICATIONINSIGHTS_CONNECTION_STRING` env var, then calls `OpenAIInstrumentor().instrument()` to auto-instrument all OpenAI SDK calls.
+- **Files changed:**
+  1. `src/chat_app.py` — lines 14, 20-21, 67-69
+  2. `src/app/agents/agent_processor.py` — lines 31, 35-36
+  3. `src/app/tools/discountLogic.py` — lines 12, 16-17
+- **Gotchas:**
+  - `APPLICATIONINSIGHTS_CONNECTION_STRING` must be set as an env var on the Container App, otherwise the app will crash on startup with a `KeyError`.
+  - The `opentelemetry-instrumentation-openai-v2` package must be installed (it's already in `pyproject.toml`).
+  - `configure_azure_monitor()` is called at module import time (top-level), so telemetry is active from the very start of the process.
+
+### Exercise 5 — CI/CD Workflows (2026-04-09)
+- **Task:** Created GitHub Actions workflows for container deployment and all 6 Foundry agent deployments, plus prompt update.
+- **Files created:**
+  1. `.github/workflows/deploy-container.yml` — Container Apps build+deploy on push to `src/**` on main.
+  2. `.github/workflows/customer-loyalty_agent_update.yml` — Deploys customer-loyalty agent on prompt/JSON change.
+  3. `.github/workflows/cart-manager_agent_update.yml` — Deploys cart-manager agent.
+  4. `.github/workflows/cora_agent_update.yml` — Deploys cora agent (ShopperAgentPrompt.txt).
+  5. `.github/workflows/handoff-service_agent_update.yml` — Deploys handoff-service agent.
+  6. `.github/workflows/interior-designer_agent_update.yml` — Deploys interior-designer agent.
+  7. `.github/workflows/inventory-agent_agent_update.yml` — Deploys inventory-agent agent.
+- **Files deleted:** `.github/workflows/jekyll-gh-pages.yml` (unused in fork).
+- **Files modified:** `src/prompts/CustomerLoyaltyAgentPrompt.txt` — added content handling guideline for answer and discount_percentage columns.
+- **Pattern:** Each agent workflow triggers on push to its prompt file, JSON definition, or own workflow file. Uses az rest POST to Foundry REST API with jq-built payload.
+- **Validation:** All 11 workflow YAML files pass yaml.safe_load validation.
