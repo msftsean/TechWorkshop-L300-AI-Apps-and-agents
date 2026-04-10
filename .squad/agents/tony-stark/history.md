@@ -121,3 +121,27 @@ Initial setup complete.
 - **Design:** Mission-control dashboard aesthetic — dark theme (#06090f base), Chakra Petch + JetBrains Mono fonts, cyan/amber/green accent palette, scanline overlay, grid texture background, CSS-only checkboxes with glow effects.
 - **Features:** 7 tabs (Connect App Insights, Set Env Vars, Deploy to Production, Create Service Principal, Set GitHub Secrets, Run Red Team Eval, Create Agent Evals), per-step checkboxes with localStorage, overall progress bar, tab completion badges, copy-to-clipboard for commands/values, particle celebration overlay on 100% completion.
 - **No build step:** Pure HTML + CSS + JS, no framework, no dependencies.
+
+### Application Insights Telemetry Diagnosis (2026-04-09)
+- **Problem:** Container App `gl4lk3hwa6s26-app` not sending live metrics to Application Insights despite instrumentation code being uncommented locally.
+- **Root cause:** **Code-deploy mismatch**. The telemetry instrumentation code exists in 3 unpushed local commits (774015f, 693c697, c7337ba) but the deployed container image was built at 2026-04-09 21:27:57 UTC from the last pushed commit (a83dcce), which predates the telemetry commit (774015f at 23:13:53 UTC).
+- **Verification findings:**
+  1. ✅ **Source code**: Telemetry instrumentation is correctly uncommented in `src/chat_app.py` (lines 14, 20-21, 67-69), `src/app/agents/agent_processor.py` (lines 31, 34-36), and `src/app/tools/discountLogic.py` (lines 12, 15-17).
+  2. ✅ **Container App env vars**: `APPLICATIONINSIGHTS_CONNECTION_STRING` is correctly set on the Container App (value matches `.env` file).
+  3. ✅ **Application Insights resource**: Exists (instrumentation key `09410eb7-ca4b-46e1-a95e-5d78d4551b7d`).
+  4. ❌ **Deployed code**: The running container image (`chat-app:latest`, digest `sha256:faf85978...`, built 2026-04-09 21:27:57 UTC) contains the **old code without telemetry** because it was built before commit 774015f (2026-04-09 23:13:53 UTC).
+  5. ⚠️ **Git state**: 3 commits ahead of `origin/main` — the telemetry changes haven't been pushed to GitHub, and the CI/CD workflow in `.github/workflows/deploy-container.yml` hasn't triggered to rebuild the image.
+- **Timeline:**
+  - 21:27:57 UTC — ACR build of `chat-app:latest` from commit a83dcce (before telemetry)
+  - 21:46:10 UTC — Commit a83dcce pushed to `origin/main`
+  - 23:13:53 UTC — Commit 774015f created locally with telemetry instrumentation
+  - Present — 3 unpushed commits (774015f, 693c697, c7337ba) exist locally
+- **Fix steps (in order):**
+  1. **Push commits to GitHub**: `git push origin main` (triggers CI/CD workflow `.github/workflows/deploy-container.yml` on push to `src/**`)
+  2. **Wait for CI/CD workflow**: Monitor GitHub Actions for the container build+deploy workflow to complete (~3-5 minutes)
+  3. **Verify deployment**: Check Container App revision to confirm new image is deployed
+  4. **Test live metrics**: Send requests to the Container App and verify telemetry appears in Application Insights Live Metrics within 1-2 minutes
+- **Gotchas:**
+  - The CI/CD workflow only triggers on push to `main` branch with changes to `src/**` paths. Manual ACR builds (`az acr build`) do NOT trigger automatic Container App updates.
+  - Live metrics can take 60-120 seconds to appear in Application Insights after the first instrumented request.
+  - Cold starts (minReplicas=0) mean the first request after idle will take ~2 minutes, so be patient when testing.

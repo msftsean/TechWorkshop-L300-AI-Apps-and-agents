@@ -2,6 +2,12 @@
 
 ## Active Decisions
 
+### Application Insights Telemetry Not Working — Root Cause & Fix
+**Author:** Tony Stark (Engineer)  
+**Date:** 2026-04-10 | **Status:** Diagnosed, awaiting fix
+
+Container App `gl4lk3hwa6s26-app` not sending live metrics to Application Insights. Root cause: telemetry instrumentation code exists in source (3 unpushed commits) but container was built before those commits. Running container contains old code. Fix: `git push origin main` to trigger CI/CD rebuild. Decision: Always verify commits are pushed and CI/CD deployment completes before expecting runtime behavior changes in deployed environment.
+
 ### Workshop SWA — Single-File Architecture
 **Author:** Tony Stark  
 **Date:** 2026-04-09 | **Status:** Implemented
