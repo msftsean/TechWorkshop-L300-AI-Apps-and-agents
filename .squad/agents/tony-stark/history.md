@@ -145,3 +145,17 @@ Initial setup complete.
   - The CI/CD workflow only triggers on push to `main` branch with changes to `src/**` paths. Manual ACR builds (`az acr build`) do NOT trigger automatic Container App updates.
   - Live metrics can take 60-120 seconds to appear in Application Insights after the first instrumented request.
   - Cold starts (minReplicas=0) mean the first request after idle will take ~2 minutes, so be patient when testing.
+
+### CI/CD Workflow Fix — All 7 Deploy Workflows (2026-04-10)
+- **Task:** Diagnosed and fixed all 7 failed deploy workflows triggered by commit 408fb28 on main.
+- **Root cause:** GitHub Actions secrets were not configured in the repository settings. `AZURE_CREDENTIALS` was empty, causing `azure/login@v2.1.1` to fail (defaults to SERVICE_PRINCIPAL auth when creds is empty).
+- **Container deploy fix:** Replaced `azure/docker-login@v1` + local Docker build with `az acr build` (server-side ACR Tasks). Eliminates need for ACR username/password secrets.
+- **All workflows:** Added "Validate required secrets" step with `::error::` annotations. Added `branches: [main]` to all 6 agent workflows.
+- **Secrets required for deploy-container.yml:** `AZURE_CREDENTIALS`, `AZURE_CONTAINER_REGISTRY` (name only, e.g., `gl4lk3hwa6s26cosureg`), `AZURE_CONTAINER_APP_NAME`, `AZURE_RESOURCE_GROUP`, plus `FOUNDRY_ENDPOINT`, `GPT_ENDPOINT`, `EMBEDDING_ENDPOINT`, `PHI_4_ENDPOINT`.
+- **Secrets required for agent workflows:** `AZURE_CREDENTIALS`, `FOUNDRY_ENDPOINT`, `GPT_DEPLOYMENT`.
+- **AZURE_CREDENTIALS format:** `{"clientId":"...","clientSecret":"...","subscriptionId":"...","tenantId":"..."}`.
+- **Key pattern:** Use `az acr build` instead of local Docker build+push in CI.
+- **Gotchas:**
+  - `azure/login@v2.1.1` silently ignores empty `creds` and falls back to SERVICE_PRINCIPAL. Always validate secrets first.
+  - `AZURE_CONTAINER_REGISTRY` = registry NAME only (not FQDN). Workflow appends `.azurecr.io`.
+  - Agent workflows without branch filter trigger on ALL branches — always add `branches: [main]`.
