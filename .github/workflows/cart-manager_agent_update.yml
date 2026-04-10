@@ -2,17 +2,30 @@ name: Deploy Cart Manager Agent
 
 on:
   push:
+    branches:
+      - main
     paths:
       - 'src/prompts/CartManagerPrompt.txt'
       - 'src/infra/agents/cart-manager.json'
       - '.github/workflows/cart-manager_agent_update.yml'
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
 jobs:
   deploy-agent:
     runs-on: ubuntu-latest
     steps:
+      - name: Validate required secrets
+        run: |
+          missing=""
+          if [ -z "${{ secrets.AZURE_CREDENTIALS }}" ]; then missing="$missing AZURE_CREDENTIALS"; fi
+          if [ -z "${{ secrets.FOUNDRY_ENDPOINT }}" ]; then missing="$missing FOUNDRY_ENDPOINT"; fi
+          if [ -z "${{ secrets.GPT_DEPLOYMENT }}" ]; then missing="$missing GPT_DEPLOYMENT"; fi
+          if [ -n "$missing" ]; then
+            echo "::error::Missing required GitHub secrets:$missing"
+            echo "Please configure these secrets in Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
       - name: Checkout repository
         uses: actions/checkout@v4
 

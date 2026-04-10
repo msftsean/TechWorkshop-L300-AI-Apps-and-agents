@@ -6,11 +6,9 @@ on:
       - main
     paths:
       - 'src/**'
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
 env:
-  AZURE_CONTAINER_REGISTRY: ${{ secrets.AZURE_CONTAINER_REGISTRY }}
   IMAGE_NAME: chat-app
 
 jobs:
@@ -18,33 +16,42 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Validate required secrets
+        run: |
+          missing=""
+          if [ -z "${{ secrets.AZURE_CREDENTIALS }}" ]; then missing="$missing AZURE_CREDENTIALS"; fi
+          if [ -z "${{ secrets.AZURE_CONTAINER_REGISTRY }}" ]; then missing="$missing AZURE_CONTAINER_REGISTRY"; fi
+          if [ -z "${{ secrets.AZURE_CONTAINER_APP_NAME }}" ]; then missing="$missing AZURE_CONTAINER_APP_NAME"; fi
+          if [ -z "${{ secrets.AZURE_RESOURCE_GROUP }}" ]; then missing="$missing AZURE_RESOURCE_GROUP"; fi
+          if [ -n "$missing" ]; then
+            echo "::error::Missing required GitHub secrets:$missing"
+            echo "Please configure these secrets in Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Log in to Azure Container Registry
-        uses: azure/docker-login@v1
-        with:
-          login-server: ${{ secrets.AZURE_CONTAINER_REGISTRY }}
-          username: ${{ secrets.AZURE_CONTAINER_REGISTRY_USERNAME }}
-          password: ${{ secrets.AZURE_CONTAINER_REGISTRY_PASSWORD }}
-
-      - name: Build and push Docker image
-        run: |
-          cd src/
-          docker build -t ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} .
-          docker push ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
       - name: Login via Azure CLI
         uses: azure/login@v2.1.1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Build and push image via ACR Tasks
+        run: |
+          az acr build \
+            --registry ${{ secrets.AZURE_CONTAINER_REGISTRY }} \
+            --image ${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            --platform linux/amd64 \
+            --file src/Dockerfile \
+            src/
+
       - name: Deploy new container image with environment variables
         run: |
           az containerapp update \
             --name ${{ secrets.AZURE_CONTAINER_APP_NAME }} \
             --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
-            --image ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            --image ${{ secrets.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} \
             --set-env-vars \
               FOUNDRY_ENDPOINT="${{ secrets.FOUNDRY_ENDPOINT }}" \
               gpt_endpoint="${{ secrets.GPT_ENDPOINT }}" \
